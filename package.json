@@ -1,0 +1,7 @@
+{
+    "name": "@lcox/lagen",
+    "version": "0.0.2",
+    "bin": {
+        "lagen": "lagen.py"
+    }
+}

@@ -1,0 +1,17 @@
+project:  discord-notion
+type: lambdas
+environment:
+  aws-default-region: eu-central-1
+  aws-access-key-secret: test
+  aws-access-key-id: testid
+
+entries:
+  - name: hello-world
+    type: node
+    method: GET
+    route: /hello
+
+  - name: ping
+    type: go
+    method: GET
+    route: /ping
