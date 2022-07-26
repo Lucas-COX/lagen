@@ -1,7 +1,11 @@
 {
-    "name": "@lcox/lagen",
-    "version": "0.0.4",
+    "name": "@lucas-cox/lagen",
+    "repository": "git://github.com/lucas-cox/lagen.git",
+    "version": "0.0.1",
     "bin": {
         "lagen": "lagen.py"
+    },
+    "publishConfig": {
+        "registry": "https://npm.pkg.github.com"
     }
 }
