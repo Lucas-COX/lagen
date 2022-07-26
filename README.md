@@ -1,7 +1,17 @@
-# Lagen
-[![semantic-release: angular](https://img.shields.io/badge/semantic--release-angular-e10079?logo=semantic-release)](https://github.com/semantic-release/semantic-release)
-![GitHub package.json version](https://img.shields.io/github/package-json/v/Lucas-COX/lagen)
+<h1 align="center" style="border-bottom: none">Lagen</h1>
+<h3 align="center">Project generator based on Terraform and AWS lambda</h3>
 
+<p align="center">
+    <a href="https://github.com/semantic-release/semantic-release">
+        <img alt="Semantic Release" src="https://img.shields.io/badge/semantic--release-angular-e10079?logo=semantic-release">
+    </a>
+    <a href="https://github.com/Lucas-COX/lagen/releases">
+        <img alt="Last release" src="https://img.shields.io/github/v/release/Lucas-COX/lagen">
+    </a>
+    <a href="https://github.com/Lucas-COX/lagen/releases">
+        <img alt="Release date" src="https://img.shields.io/github/release-date/Lucas-COX/lagen">
+    </a>
+</p>
 
 ## TODO
 
