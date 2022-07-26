@@ -1,6 +1,10 @@
 {
     "name": "{{ project_name }}",
+    "version": "1.0.0",
+    "description": "{{ project_description }}",
+    "main": "{{ main_file }}",
+    "scripts": {{ project_scripts }},
     "dependencies": {
-        "@lcox/lagen": "latest"
+        "@lcox/lagen": "^0.0.2"
     }
 }

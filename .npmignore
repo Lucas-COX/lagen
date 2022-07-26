@@ -1,3 +1,6 @@
 .lagen
 node_modules
 templates
+Makefile
+test
+hello-world

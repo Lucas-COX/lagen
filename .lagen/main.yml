@@ -10,8 +10,10 @@ entries:
     type: node
     method: GET
     route: /hello
+    main: index.js
 
   - name: ping
     type: go
     method: GET
     route: /ping
+    main: main.go
