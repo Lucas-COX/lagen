@@ -1,7 +1,7 @@
 {
     "name": "@lucas-cox/lagen",
     "repository": "git://github.com/lucas-cox/lagen.git",
-    "version": "0.0.1",
+    "version": "0.0.0",
     "bin": {
         "lagen": "lagen.py"
     },
