@@ -131,3 +131,6 @@ dmypy.json
 # Generated files
 test/
 hello-world
+
+# Node modules
+node_modules/
