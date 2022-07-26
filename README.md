@@ -20,14 +20,14 @@ Please note that this is not functional and being developped for the moment.
 
 ## Requirements
 In order to use lagen, you need the following packages :
-- npm>=5.2.0
+- npm >= 5.2.0
 - python >= 3.10.0
 
 
 ## Installation
 
 ### Local Installation
-Use the following command to install lagen directly in your project's directory :
+Use the following command to install **lagen** directly in your project's directory then run it :
 ```bash
 npm install --save-dev @lucas-cox/lagen
 ```
@@ -38,7 +38,7 @@ npx lagen
 Make sure that a `.lagen` directory exists, with a valid `main.yml` file.
 
 ### Global Installation
-Use the following command to install lagen globally and run it.
+Use the following command to install **lagen** globally and run it :
 ```bash
 npx lagen [path_to_project]
 ```
