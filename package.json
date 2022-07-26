@@ -1,11 +1,18 @@
 {
-    "name": "@lucas-cox/lagen",
-    "repository": "git://github.com/lucas-cox/lagen.git",
-    "version": "0.0.0",
-    "bin": {
-        "lagen": "lagen.py"
-    },
-    "publishConfig": {
-        "registry": "https://npm.pkg.github.com"
-    }
+  "name": "@lucas-cox/lagen",
+  "repository": "git://github.com/lucas-cox/lagen.git",
+  "version": "0.0.0-development",
+  "license": "MIT",
+  "bin": {
+    "lagen": "lagen.py"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "scripts": {
+    "semantic-release": "semantic-release"
+  },
+  "devDependencies": {
+    "semantic-release": "^19.0.3"
+  }
 }
