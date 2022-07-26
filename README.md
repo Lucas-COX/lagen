@@ -13,8 +13,39 @@
     </a>
 </p>
 
-## TODO
+The goal of this project is to easily generate different types of projects (lambda monorepos, react and next apps, etc.) with the idea of being highly configurable.
 
-- Generate a Makefile for each project
-- Generate a Makefile calling all the other ones
-- Generate projects using a terraform friendly architecture, giving the sample terraform files
+Please note that this is not functional and being developped for the moment.
+
+
+## Requirements
+In order to use lagen, you need the following packages :
+- npm>=5.2.0
+- python >= 3.10.0
+
+
+## Installation
+
+### Local Installation
+Use the following command to install lagen directly in your project's directory :
+```bash
+npm install --save-dev @lucas-cox/lagen
+```
+Then
+```bash
+npx lagen
+```
+Make sure that a `.lagen` directory exists, with a valid `main.yml` file.
+
+### Global Installation
+Use the following command to install lagen globally and run it.
+```bash
+npx lagen [path_to_project]
+```
+Make sure that a `.lagen` directory exists in the root of your project directory, with a valid `main.yml` file.
+
+
+## In development
+
+- Generate a lambda monorepo using a terraform friendly architecture, giving the sample terraform files, wrapped in a Makefile
+- Generate a Makefile calling all the projects ones
