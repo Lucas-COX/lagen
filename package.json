@@ -10,7 +10,8 @@
     "registry": "https://npm.pkg.github.com"
   },
   "scripts": {
-    "semantic-release": "semantic-release"
+    "semantic-release": "semantic-release",
+    "test": "echo \"No tests specified\""
   },
   "devDependencies": {
     "semantic-release": "^19.0.3"
