@@ -1,7 +1,7 @@
 all: install
 
 apply:
-	@{{ env }} terraform apply
+	@{{ env }}terraform apply
 
 build:
 	@{{ build_command }}
