@@ -134,28 +134,23 @@ def generate_makefile(entry: dict[str, str], env: dict[str, str], type: str):
         '{{ build_command }}': get_build_command(entry=entry),
         '{{ install_command }}': get_install_command(entry=entry),
     }
+    try:
+        replacements['{{ global_env }}'] = generate_environment(entry['environment'], env) + '\n\n' if 'environment' in entry.keys() else ""
+    except KeyError as e:
+        raise Exception('Environment key %s is not in global environment' % (str(e)))
 
     try:
         log_info("[%s] Downloading Makefile from template..." % entry['name'])
         file = download_file(urls[type]).decode('utf-8')
         log_success('[%s] Makefile template downloaded.' % entry['name'])
-
-
     except ValueError as e:
         raise Exception('An error occured while downloading Makefile template (%s)' % str(e))
-
     except KeyError:
         raise Exception('Unknown type : %s' % type)
 
     log_info('[%s] Editing Makefile...' % entry['name'])
-    try:
-        if 'environment' in entry.keys():
-            file = generate_environment(entry['environment'], env) + "\n\n" + replace_all(file, replacements)
-        else:
-            file = replace_all(file, replacements)
-    except KeyError as e:
-        log_error('[%s] Environment key %s not in global environment' % (entry['name'], str(e)))
-        exit(1)
+
+    file = replace_all(file, replacements)
 
     try:
         f = open(path.join(entry['name'], 'Makefile'), 'w' if path.exists(path.join(entry['name'], 'Makefile')) else 'x')
