@@ -1,5 +1,6 @@
 project: lagen
 type: lambdas
+
 environment:
   aws-default-region: eu-central-1
   aws-access-key-secret: test
