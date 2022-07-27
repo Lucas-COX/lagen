@@ -11,6 +11,25 @@ entries:
     method: GET
     route: /hello
     main: index.js
+    package_manager: npm
+    environment:
+      - aws-default-region
+
+  - name: yarn-testing
+    type: node
+    method: GET
+    route: /yarn-testing
+    main: index.js
+    package_manager: yarn
+    environment:
+      - aws-access-key-secret
+      - aws-access-key-id
+
+  - name: nopm
+    type: node
+    method: GET
+    route: /nopm
+    main: index.js
 
   - name: ping
     type: go

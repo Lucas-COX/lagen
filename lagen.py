@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 
-from dataclasses import replace
 from sys import argv, exit, stderr, stdout
-from os import path, system, remove
+from os import path, system
 from yaml import safe_load
 import functools
-import threading
 import requests
+
+
+################    UTILS    #####################
 
 
 class bcolors:
@@ -19,6 +20,18 @@ class bcolors:
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
+
+entries = {
+    'node': {
+        'install_command': '{{ pm }} install',
+        'build_command': '{{ pm }} run build',
+        'package_managers': ['npm', 'yarn'],
+    },
+    'go': {
+        'install_command': 'go mod tidy',
+        'build_command': 'go build {{ name }}',
+    }
+}
 
 
 def exit_usage():
@@ -47,63 +60,80 @@ def log_info(message: str):
     print('%s[Info]%s%s' % (bcolors.HEADER, bcolors.ENDC, message))
 
 
-################    FILE GENERATORS    #####################
-
-
-def download_file(url: str, filename: str) -> bytes:
-    # with open(filename, "wb") as f:
-        buffer = bytes()
-        response = requests.get(url, stream=True)
-        total_length = response.headers.get('content-length')
-
-        if (response.status_code != 200):
-           #  f.close()
-            remove(filename)
-            raise ValueError('Response status_code : %d, expected %d' % (response.status_code, 200))
-        if total_length is None:  # no content length header
-            # f.write(response.content)
-            buffer += response.content
-        else:
-            dl = 0
-            total_length = int(total_length)
-            for data in response.iter_content(chunk_size=4096):
-                dl += len(data)
-               # f.write(data)
-                buffer += data
-
-                done = int(50 * dl / total_length)
-                stdout.write("\r[%s%s]" % ('=' * done, ' ' * (50-done)))
-                stdout.flush()
-        stdout.write("\n")
-        return buffer
-
-
-def replace_in_file(file: str, replaces: dict[str, str]) -> str:
+def replace_all(target: str, replaces: dict[str, str]) -> str:
     for rep in replaces:
-        file = file.replace(rep, replaces[rep])
-    return file
+        if not replaces[rep]:
+            raise ValueError("Missing value for %s" % rep)
+        target = target.replace(rep, replaces[rep])
+    return target
 
 
-def generate_makefile(dir: str, env: dict[str, str], type: str):
-    mappings = {
+################     COMMAND GENERATION     ###################
+
+
+def get_build_command(entry: dict[str, str]) -> str:
+    replacements = {
+        '{{ pm }}': entry['package_manager'],
+        '{{ name }}': entry['name']
+    }
+    return replace_all(entries[entry['type']]['build_command'], replacements)
+
+
+def get_install_command(entry: dict[str, str]) -> str:
+    replacements = {
+        '{{ pm }}': entry['package_manager'],
+    }
+    return replace_all(entries[entry['type']]['install_command'], replacements)
+
+
+############### FILE GENERATION ################
+
+
+def download_file(url: str) -> bytes:
+    buffer = bytes()
+    response = requests.get(url, stream=True)
+    total_length = response.headers.get('content-length')
+
+    if (response.status_code != 200):
+        raise ValueError('Response status_code : %d, expected %d' % (response.status_code, 200))
+    if total_length is None:
+        buffer += response.content
+    else:
+        dl = 0
+        total_length = int(total_length)
+        for data in response.iter_content(chunk_size=4096):
+            dl += len(data)
+            buffer += data
+
+            done = int(50 * dl / total_length)
+            stdout.write("\r[%s%s]" % ('=' * done, ' ' * (50-done)))
+            stdout.flush()
+    stdout.write("\n")
+    return buffer
+
+
+def generate_makefile(entry: dict[str, str], env: dict[str, str], type: str):
+    urls = {
         'lambdas': 'https://raw.githubusercontent.com/Lucas-COX/lagen/master/templates/lambdas/Makefile'
     }
-    replaces = {
+    replacements = {
         '{{ env }}': functools.reduce(
             lambda x, y: x + y,
             [key.upper().replace('-', '_') + '=' + '$(' + key.upper().replace('-', '_') + ') ' for key in env]
         ),
+        '{{ build_command }}': get_build_command(entry=entry),
+        '{{ install_command }}': get_install_command(entry=entry),
     }
+
     try:
-        log_info("[%s] Downloading Makefile from template..." % dir)
-        file = download_file(
-            mappings[type],
-            path.join(dir, 'Makefile')
-        ).decode('utf-8')
-        log_success('[%s] Makefile template downloaded.' % dir)
-        log_info('[%s] Editing Makefile...' % dir)
-        file = replace_in_file(file, replaces)
-        f = open(path.join(dir, 'Makefile'), 'w' if path.exists(path.join(dir, 'Makefile')) else 'x')
+        log_info("[%s] Downloading Makefile from template..." % entry['name'])
+        file = download_file(urls[type]).decode('utf-8')
+        log_success('[%s] Makefile template downloaded.' % entry['name'])
+
+        log_info('[%s] Editing Makefile...' % entry['name'])
+        file = replace_all(file, replacements)
+
+        f = open(path.join(entry['name'], 'Makefile'), 'w' if path.exists(path.join(entry['name'], 'Makefile')) else 'x')
         f.write(file)
 
     except KeyError:
@@ -120,12 +150,19 @@ def generate_makefile(dir: str, env: dict[str, str], type: str):
 ##################    GENERATORS    ########################
 
 
-def generate_node_lambda(entry: any, config: any):
-    # try:
-        system("mkdir -p %s" % path.join(config['cwd'], entry['name']))
-        generate_makefile(dir=entry['name'], env=config['environment'], type=config['type'])
-    # except Exception as e:
-    #     log_error('[%s] An error occured while generating the entry :\n\n"%s"\n' % (entry['name'], str(e)))
+def generate_node_lambda(entry: dict[str, str], config: any):
+    if not 'package_manager' in entry.keys():
+        entry['package_manager'] = 'npm'
+    if entry['package_manager'] != 'npm' and entry['package_manager'] != 'yarn':
+        raise ValueError('Invalid value for node package manager: %s, available are %s' % (
+            entry['package_manager'],
+            str(entries[entry['type']]['package_managers'])
+        ))
+    system("mkdir -p %s" % path.join(config['cwd'], entry['name']))
+    generate_makefile(entry=entry, env=config['environment'], type=config['type'])
+    # generate_terraform
+    # generate_package.json
+    # create entry_point
 
 
 def generate_go_lambda(entry: any, config: any):
@@ -136,25 +173,22 @@ def generate_go_lambda(entry: any, config: any):
 
 
 def generate_entries(config: any) -> None:
-    threads = list()
     mappings = {
         'go': generate_go_lambda,
         'node': generate_node_lambda,
     }
+
     try:
-        # for entry in config['entries']:
-        #     threads.append(threading.Thread(target=mappings[entry['type']], args=(entry, config)))
-        # for thread in threads:
-        #     thread.start()
-        # for thread in threads:
-        #     thread.join()
         for entry in config['entries']:
+            print(entry['type'])
             mappings[entry['type']](entry, config)
-    except KeyError:
-        log_error('[%s] Unknown entry type.' % entry['type'])
+    except KeyError as e:
+        log_error('[%s] Unknown entry type: %s.' % (entry['name'], entry['type']))
+        print(e)
         exit(1)
     except Exception as e:
         log_error('[%s] %s' % (entry['name'], str(e)))
+        exit(1)
 
 
 def main():

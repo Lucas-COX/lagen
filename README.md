@@ -54,7 +54,7 @@ npx lagen [path_to_project]
 > yarn
 ```bash
 yarn global add @lucas-cox/lagen
-lagen
+lagen [path_to_project]
 ```
 
 Make sure that a `.lagen` directory exists in the root of your project directory, with a valid `main.yml` file.
