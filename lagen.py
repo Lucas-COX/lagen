@@ -5,6 +5,7 @@ from sys import argv, exit, stderr, stdout
 from os import path, system
 from yaml import safe_load
 import functools
+import json
 import requests
 
 
@@ -96,6 +97,39 @@ def generate_environment(selected: dict[str, str], env: dict[str, str]) -> str:
         return "\n".join([key.upper().replace('-', '_') + '\t= ' + env[key] for key in selected]) + "\n"
 
 
+def rule_to_text(rule: str, body: dict[str, str], env: dict[str, str]) -> str:
+    result = "%s:\t%s\n" % (
+        rule,
+        " ".join(body['prerules'])
+    ) if 'prerules' in body.keys() else "%s:\n" % (rule)
+    if 'command' in body.keys():
+        result += "\t@%s%s\n" % (
+            " ".join(
+                [key.upper().replace('-', '_') + '=' + '$(' + key.upper().replace('-', '_') + ') ' for key in env.keys()]
+            ) if env and 'use_environment' in body.keys() and body['use_environment'] else "",
+            body['command']
+        )
+    return result
+
+
+def json_to_makefile(obj: dict[str, any]) -> str:
+    result = "# This is an automatically generated Makefile, do not modify!\n"
+    result += "# Edit your lagen configuration to regenerate it.\n\n"
+    if obj['environment']:
+        result += "\n".join([key + '\t= ' + obj['environment'][key] for key in obj['environment'].keys()]) + "\n\n\n"
+    result += "\n".join(
+        [rule_to_text(rule, obj['rules'][rule], obj['environment']) for rule in obj['rules']]
+    )
+    phonies = list()
+    for rule in obj['rules']:
+        if 'phony' not in obj['rules'][rule].keys() or obj['rules'][rule]['phony']:
+            phonies.append(rule)
+
+    result += "\n.PHONY:\t%s" % ('\\\n\t\t'.join(phonies))
+    return result
+
+
+
 ############### FILE GENERATION ################
 
 
@@ -122,42 +156,76 @@ def download_file(url: str) -> bytes:
     return buffer
 
 
-def generate_makefile(entry: dict[str, str], env: dict[str, str], type: str):
-    urls = {
-        'lambdas': 'https://raw.githubusercontent.com/Lucas-COX/lagen/master/templates/lambdas/Makefile'
+def generate_makefile(entry: dict[str, any], env: dict[str, str], type: str):
+    makefile = {
+        'rules': {
+            'all': {
+                'prerules': ['install']
+            },
+            'apply': {
+                'command': 'terraform apply',
+                'use_environment': True
+            },
+            'build': {
+                'command': get_build_command(entry=entry),
+            },
+            'deploy': {
+                'prerules': ['build', 'deploy'],
+            },
+            'init': {
+                'command': 'terraform init',
+            },
+            'install': {
+                'command': get_install_command(entry=entry),
+            },
+            'plan': {
+                'command': 'terraform plan',
+                'use_environment': True
+            }
+        },
+        'environment': {},
     }
-    replacements = {
-        '{{ env }}': functools.reduce(
-            lambda x, y: x + y,
-            [key.upper().replace('-', '_') + '=' + '$(' + key.upper().replace('-', '_') + ') ' for key in entry['environment']]
-        ) if 'environment' in entry.keys() else "",
-        '{{ build_command }}': get_build_command(entry=entry),
-        '{{ install_command }}': get_install_command(entry=entry),
+
+    if 'environment' in entry.keys():
+        try:
+            for key in entry['environment']:
+                makefile['environment'].update({ key.upper().replace('-', '_'): env[key] })
+        except KeyError as e:
+            raise Exception('Environment key %s not in global environment' % str(e))
+
+    if 'rules' in entry.keys():
+        for rule in entry['rules']:
+            makefile['rules'][rule['name']] = rule
+            del makefile['rules'][rule['name']]['name']
+
+    with open(path.join(entry['name'], 'Makefile'), 'w' if path.exists(path.join(entry['name'], 'Makefile')) else 'x') as f:
+       f.write(json_to_makefile(obj=makefile))
+
+
+def generate_package_json(entry: dict[str, str], config: any):
+    package = {
+        "name": entry["name"],
+        "author": config["author"] if 'author' in config.keys() else "",
+        "version": entry["version"] if 'version' in entry.keys() else "0.0.0-development",
+        "main": entry["main"] if 'main' in entry.keys() else "index.js",
+        "scripts": {
+            "build": entry['build'] if 'build' in entry.keys() else "echo \"No build command specified, using Terraform default zip\""
+        },
+        "dependencies": entry['dependencies'] if 'dependencies' in entry.keys() else {},
+        "devDependencies": entry['devDependencies'] if 'devDependencies' in entry.keys() else {},
     }
-    try:
-        replacements['{{ global_env }}'] = generate_environment(entry['environment'], env) + '\n\n' if 'environment' in entry.keys() else ""
-    except KeyError as e:
-        raise Exception('Environment key %s is not in global environment' % (str(e)))
+
+    if 'scripts' in entry.keys():
+        package['scripts'].update(entry['scripts'])
+    if type == 'global':
+        package['devDependencies'].update({ '@lucas-cox/lagen': 'latest' })
 
     try:
-        log_info("[%s] Downloading Makefile from template..." % entry['name'])
-        file = download_file(urls[type]).decode('utf-8')
-        log_success('[%s] Makefile template downloaded.' % entry['name'])
-    except ValueError as e:
-        raise Exception('An error occured while downloading Makefile template (%s)' % str(e))
-    except KeyError:
-        raise Exception('Unknown type : %s' % type)
+        with open(path.join(entry['name'], 'package.json'), 'w' if path.exists(path.join(entry['name'], 'package.json')) else 'x') as f:
+            json.dump(package, fp=f, indent=4)
 
-    log_info('[%s] Editing Makefile...' % entry['name'])
-
-    file = replace_all(file, replacements)
-
-    try:
-        f = open(path.join(entry['name'], 'Makefile'), 'w' if path.exists(path.join(entry['name'], 'Makefile')) else 'x')
-        f.write(file)
     except (OSError, IOError) as e:
-        raise Exception('Unable to edit Makefile (%s)' % (str(e)))
-
+        raise Exception('Unable to edit package.json (%s)' % (str(e)))
 
 
 ##################    GENERATORS    ########################
@@ -174,8 +242,8 @@ def generate_node_lambda(entry: dict[str, str], config: any):
     system("mkdir -p %s" % path.join(config['cwd'], entry['name']))
     generate_makefile(entry=entry, env=config['environment'], type=config['type'])
     # generate_terraform
-    # generate_package.json
-    # create entry_point
+    generate_package_json(entry=entry, config=config)
+    # create source directory and entry_point
 
 
 def generate_go_lambda(entry: any, config: any):

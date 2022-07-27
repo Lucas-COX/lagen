@@ -1,5 +1,6 @@
 project: lagen
 type: lambdas
+author: lucas-cox
 
 environment:
   aws-default-region: eu-central-1
@@ -11,10 +12,12 @@ entries:
     type: node
     method: GET
     route: /hello
-    main: index.js
+    main: hello.js
     package_manager: npm
-    environment:
-      - aws-default-region
+    environment: [ aws-default-region ]
+    scripts:
+      test: echo "Testing things"
+      test2: echo "Testing more things"
 
   - name: yarn-testing
     type: node
@@ -22,15 +25,24 @@ entries:
     route: /yarn-testing
     main: index.js
     package_manager: yarn
-    environment:
-      - aws-access-key-secret
-      - aws-access-key-id
+    environment: [ aws-access-key-secret, aws-access-key-id ]
 
-  - name: nopm
+  - name: custom-rule
     type: node
     method: GET
     route: /nopm
     main: index.js
+    rules:
+      - name: test
+        prerules: [ pretest ]
+        command: echo "This is a custom rule"
+        use_environment: true
+      - name: pretest
+        command: echo "This happens before a custom rule"
+        phony: false
+      - name: plan
+        command: echo "This is my new plan"
+
 
   - name: ping
     type: go
