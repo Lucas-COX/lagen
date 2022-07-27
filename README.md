@@ -27,21 +27,36 @@ In order to use lagen, you need the following packages :
 ## Installation
 
 ### Local Installation
-Use the following command to install **lagen** directly in your project's directory then run it :
+
+Use the following commands to install **lagen** directly in your project's directory and run it :
+> npm
 ```bash
 npm install --save-dev @lucas-cox/lagen
-```
-Then
-```bash
 npx lagen
 ```
+
+> yarn
+```bash
+yarn add --dev@lucas-cox/lagen
+yarn run lagen
+```
+
+
 Make sure that a `.lagen` directory exists, with a valid `main.yml` file.
 
 ### Global Installation
 Use the following command to install **lagen** globally and run it :
+> npm
 ```bash
 npx lagen [path_to_project]
 ```
+
+> yarn
+```bash
+yarn global add @lucas-cox/lagen
+lagen
+```
+
 Make sure that a `.lagen` directory exists in the root of your project directory, with a valid `main.yml` file.
 
 
