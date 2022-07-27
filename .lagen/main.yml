@@ -1,4 +1,4 @@
-project:  discord-notion
+project: lagen
 type: lambdas
 environment:
   aws-default-region: eu-central-1
@@ -42,5 +42,3 @@ entries:
     method: GET
     route: /badentry
     main: index.js
-    environment:
-      - test
