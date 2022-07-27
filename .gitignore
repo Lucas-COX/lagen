@@ -132,6 +132,8 @@ dmypy.json
 test/
 hello-world/
 yarn-testing/
+nopm/
+badentry/
 
 # Node modules
 node_modules/

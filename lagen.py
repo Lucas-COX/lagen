@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from cmath import inf
 from sys import argv, exit, stderr, stdout
 from os import path, system
 from yaml import safe_load
@@ -60,15 +61,20 @@ def log_info(message: str):
     print('%s[Info]%s%s' % (bcolors.HEADER, bcolors.ENDC, message))
 
 
+def log_header(message: str):
+    line = ("%s%s%s" % (bcolors.UNDERLINE, message, bcolors.ENDC)).center(75, ' ')
+    print("\n%s\n" % line)
+
+
 def replace_all(target: str, replaces: dict[str, str]) -> str:
     for rep in replaces:
-        if not replaces[rep]:
+        if replaces[rep] == None:
             raise ValueError("Missing value for %s" % rep)
         target = target.replace(rep, replaces[rep])
     return target
 
 
-################     COMMAND GENERATION     ###################
+################     TEXT GENERATION     ###################
 
 
 def get_build_command(entry: dict[str, str]) -> str:
@@ -84,6 +90,10 @@ def get_install_command(entry: dict[str, str]) -> str:
         '{{ pm }}': entry['package_manager'],
     }
     return replace_all(entries[entry['type']]['install_command'], replacements)
+
+
+def generate_environment(selected: dict[str, str], env: dict[str, str]) -> str:
+        return "\n".join([key.upper().replace('-', '_') + '\t= ' + env[key] for key in selected]) + "\n"
 
 
 ############### FILE GENERATION ################
@@ -119,8 +129,8 @@ def generate_makefile(entry: dict[str, str], env: dict[str, str], type: str):
     replacements = {
         '{{ env }}': functools.reduce(
             lambda x, y: x + y,
-            [key.upper().replace('-', '_') + '=' + '$(' + key.upper().replace('-', '_') + ') ' for key in env]
-        ),
+            [key.upper().replace('-', '_') + '=' + '$(' + key.upper().replace('-', '_') + ') ' for key in entry['environment']]
+        ) if 'environment' in entry.keys() else "",
         '{{ build_command }}': get_build_command(entry=entry),
         '{{ install_command }}': get_install_command(entry=entry),
     }
@@ -130,20 +140,28 @@ def generate_makefile(entry: dict[str, str], env: dict[str, str], type: str):
         file = download_file(urls[type]).decode('utf-8')
         log_success('[%s] Makefile template downloaded.' % entry['name'])
 
-        log_info('[%s] Editing Makefile...' % entry['name'])
-        file = replace_all(file, replacements)
 
-        f = open(path.join(entry['name'], 'Makefile'), 'w' if path.exists(path.join(entry['name'], 'Makefile')) else 'x')
-        f.write(file)
+    except ValueError as e:
+        raise Exception('An error occured while downloading Makefile template (%s)' % str(e))
 
     except KeyError:
         raise Exception('Unknown type : %s' % type)
 
-    except ValueError as e:
-        raise Exception('An error occured while downloading Makefile template : %s' % str(e))
+    log_info('[%s] Editing Makefile...' % entry['name'])
+    try:
+        if 'environment' in entry.keys():
+            file = generate_environment(entry['environment'], env) + "\n\n" + replace_all(file, replacements)
+        else:
+            file = replace_all(file, replacements)
+    except KeyError as e:
+        log_error('[%s] Environment key %s not in global environment' % (entry['name'], str(e)))
+        exit(1)
 
+    try:
+        f = open(path.join(entry['name'], 'Makefile'), 'w' if path.exists(path.join(entry['name'], 'Makefile')) else 'x')
+        f.write(file)
     except (OSError, IOError) as e:
-        raise Exception('Unable to edit Makefile : %s' % (str(e)))
+        raise Exception('Unable to edit Makefile (%s)' % (str(e)))
 
 
 
@@ -180,15 +198,16 @@ def generate_entries(config: any) -> None:
 
     try:
         for entry in config['entries']:
-            print(entry['type'])
+            log_header("%s" % entry['name'].upper())
             mappings[entry['type']](entry, config)
+            log_success('[%s] Entry successfully generated !\n' % entry['name'])
     except KeyError as e:
         log_error('[%s] Unknown entry type: %s.' % (entry['name'], entry['type']))
         print(e)
         exit(1)
-    except Exception as e:
-        log_error('[%s] %s' % (entry['name'], str(e)))
-        exit(1)
+    # except Exception as e:
+    #     log_error('[%s] %s' % (entry['name'], str(e)))
+    #     exit(1)
 
 
 def main():

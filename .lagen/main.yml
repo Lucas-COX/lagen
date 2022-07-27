@@ -36,3 +36,11 @@ entries:
     method: GET
     route: /ping
     main: main.go
+
+  - name: badentry
+    type: node
+    method: GET
+    route: /badentry
+    main: index.js
+    environment:
+      - test
