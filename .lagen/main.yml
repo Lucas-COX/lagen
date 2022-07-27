@@ -1,5 +1,6 @@
-project:  discord-notion
+project: lagen
 type: lambdas
+
 environment:
   aws-default-region: eu-central-1
   aws-access-key-secret: test
@@ -11,9 +12,34 @@ entries:
     method: GET
     route: /hello
     main: index.js
+    package_manager: npm
+    environment:
+      - aws-default-region
+
+  - name: yarn-testing
+    type: node
+    method: GET
+    route: /yarn-testing
+    main: index.js
+    package_manager: yarn
+    environment:
+      - aws-access-key-secret
+      - aws-access-key-id
+
+  - name: nopm
+    type: node
+    method: GET
+    route: /nopm
+    main: index.js
 
   - name: ping
     type: go
     method: GET
     route: /ping
     main: main.go
+
+  - name: badentry
+    type: node
+    method: GET
+    route: /badentry
+    main: index.js

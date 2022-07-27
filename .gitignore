@@ -130,7 +130,10 @@ dmypy.json
 
 # Generated files
 test/
-hello-world
+hello-world/
+yarn-testing/
+nopm/
+badentry/
 
 # Node modules
 node_modules/
