@@ -55,6 +55,17 @@ def parse_config() -> dict:
         exit(1)
 
 
+def replace_all(target: str, replaces: dict[str, str]) -> str:
+    for rep in replaces:
+        if replaces[rep] == None:
+            raise ValueError("Missing value for %s" % rep)
+        target = target.replace(rep, replaces[rep])
+    return target
+
+
+################## LOG FUNCTIONS ##################
+
+
 def log_error(message: str):
     stderr.write('%s[Error]%s%s\n' % (bcolors.FAIL, bcolors.ENDC, message))
 
