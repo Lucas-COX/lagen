@@ -18,6 +18,8 @@ entries:
     scripts:
       test: echo "Testing things"
       test2: echo "Testing more things"
+    dependencies:
+      express: 4.18.1
 
   - name: yarn-testing
     type: node

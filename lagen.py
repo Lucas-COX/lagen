@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 
-from cmath import inf
+from genericpath import isdir
 from sys import argv, exit, stderr, stdout
-from os import path, system
+from os import chdir, path, remove, system
 from yaml import safe_load
 import functools
 import json
 import requests
+import subprocess
 
 
 ##################    MAPPINGS    #####################
@@ -44,9 +45,9 @@ def exit_usage():
     print('USAGE:   lagen [path_to_project]')
 
 
-def parse_config(dir: str) -> dict:
+def parse_config() -> dict:
     try:
-        with open(path.join(dir, '.lagen/main.yml')) as file:
+        with open('.lagen/main.yml') as file:
             content = safe_load(file)
             return content
     except:
@@ -60,6 +61,14 @@ def replace_all(target: str, replaces: dict[str, str]) -> str:
             raise ValueError("Missing value for %s" % rep)
         target = target.replace(rep, replaces[rep])
     return target
+
+
+def install_dependencies(entry: dict[str, any]):
+    log_info('Installing dependencies...')
+    code = subprocess.call(args=['make', '-C', entry['name'], 'install'])
+    if code != 0:
+        log_error('Unable to install dependencies.')
+        log_error('You will have to install them manually or to edit the configuration file.')
 
 
 ################## LOG FUNCTIONS ##################
@@ -164,6 +173,12 @@ def json_to_makefile(obj: dict[str, any]) -> str:
 #     return buffer
 
 
+def create_directory(name: str):
+    system("rm -rf %s" % name)
+    system("mkdir -p %s" % name)
+
+
+
 def generate_makefile(entry: dict[str, any], env: dict[str, str], type: str):
     makefile = {
         'rules': {
@@ -222,22 +237,33 @@ def generate_makefile(entry: dict[str, any], env: dict[str, str], type: str):
 
 
 def generate_package_json(entry: dict[str, str], config: any):
+    mandatory_keys = {
+        'name': True,
+        'scripts': False,
+        'dependencies': False,
+        'devDependencies': False,
+        'author': False,
+        'license': False,
+        'version': False,
+        'main': False
+    }
     package = {
-        "name": entry["name"],
-        "author": config["author"] if 'author' in config.keys() else "",
-        "version": entry["version"] if 'version' in entry.keys() else "0.0.0-development",
-        "main": entry["main"] if 'main' in entry.keys() else "index.js",
+        "version": "0.0.0-development",
+        "main": "index.js",
         "scripts": {
             "build": entry['build'] if 'build' in entry.keys() else "echo \"No build command specified, using Terraform default zip\""
         },
-        "dependencies": entry['dependencies'] if 'dependencies' in entry.keys() else {},
-        "devDependencies": entry['devDependencies'] if 'devDependencies' in entry.keys() else {},
     }
 
-    if 'scripts' in entry.keys():
-        package['scripts'].update(entry['scripts'])
+    for key in mandatory_keys.keys():
+        if key in entry.keys():
+            if key in package.keys() and getattr(package[key], 'update', None):
+                package[key].update(entry[key])
+            else:
+                package[key] = entry[key]
+
     if type == 'global':
-        package['devDependencies'].update({ '@lucas-cox/lagen': 'latest' })
+        package['devDependencies']['@lucas-cox/lagen'] = 'latest'
 
     try:
         log_info('Generating package.json...')
@@ -259,12 +285,19 @@ def generate_node_lambda(entry: dict[str, str], config: any):
             entry['package_manager'],
             str(entries[entry['type']]['package_managers'])
         ))
-    log_info('Creating ')
-    system("mkdir -p %s" % path.join(config['cwd'], entry['name']))
+
+    log_info('Creating %s directory.' % entry['name'])
+
+    create_directory(entry['name'])
     generate_makefile(entry=entry, env=config['environment'], type=config['type'])
     # generate_terraform
     generate_package_json(entry=entry, config=config)
-    # create source directory and entry_point
+    # create src directory and entry_point
+    if 'dependencies' in entry.keys() and entry['dependencies']\
+        or 'devDependencies' in entry.keys() and entry['devDependencies']:
+        c = input('Do you wish to install the dependencies ? (y/n) [Default "y"]: ')
+        if not c or c == 'y':
+            install_dependencies(entry)
 
 
 def generate_go_lambda(entry: any, config: any):
@@ -285,7 +318,7 @@ def generate_entries(config: any) -> None:
             log_header("%s" % entry['name'].upper())
             mappings[entry['type']](entry, config)
             log_success('Entry successfully generated !\n')
-    except KeyError as e:
+    except KeyError:
         log_error('Unknown entry type: %s.' % (entry['type']))
         exit(1)
     # except Exception as e:
@@ -296,8 +329,14 @@ def generate_entries(config: any) -> None:
 def main():
     if len(argv) > 2:
         exit_usage()
-    config = parse_config('.' if len(argv) == 1 else argv[1])
-    config['cwd'] = '.' if len(argv) == 1 else argv[1]
+
+    if len(argv) == 2 and path.isdir(argv[1]):
+        chdir(argv[1])
+    elif len(argv) == 2 and not path.isdir(argv[1]):
+        log_error('Bad argument : %s, not a directory' % argv[1])
+        exit(1)
+
+    config = parse_config()
     generate_entries(config)
 
 
