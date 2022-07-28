@@ -26,6 +26,9 @@ entries:
     main: index.js
     package_manager: yarn
     environment: [ aws-access-key-secret, aws-access-key-id ]
+    scripts:
+      test: echo "This is my first test script!"
+      lagen: lagen
 
   - name: custom-rule
     type: node

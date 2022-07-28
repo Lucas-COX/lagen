@@ -9,7 +9,7 @@ import json
 import requests
 
 
-################    UTILS    #####################
+##################    MAPPINGS    #####################
 
 
 class bcolors:
@@ -37,6 +37,9 @@ entries = {
 }
 
 
+####################    UTILS    ####################
+
+
 def exit_usage():
     print('USAGE:   lagen [path_to_project]')
 
@@ -49,6 +52,17 @@ def parse_config(dir: str) -> dict:
     except:
         print('Bad configuration file: %s' % (path.join(dir, '.lagen/main.yml')))
         exit(1)
+
+
+def replace_all(target: str, replaces: dict[str, str]) -> str:
+    for rep in replaces:
+        if replaces[rep] == None:
+            raise ValueError("Missing value for %s" % rep)
+        target = target.replace(rep, replaces[rep])
+    return target
+
+
+################## LOG FUNCTIONS ##################
 
 
 def log_error(message: str):
@@ -69,14 +83,6 @@ def log_header(message: str):
     print("%s\n" % line)
 
 
-def replace_all(target: str, replaces: dict[str, str]) -> str:
-    for rep in replaces:
-        if replaces[rep] == None:
-            raise ValueError("Missing value for %s" % rep)
-        target = target.replace(rep, replaces[rep])
-    return target
-
-
 ################     TEXT GENERATION     ###################
 
 
@@ -95,8 +101,8 @@ def get_install_command(entry: dict[str, str]) -> str:
     return replace_all(entries[entry['type']]['install_command'], replacements)
 
 
-def generate_environment(selected: dict[str, str], env: dict[str, str]) -> str:
-        return "\n".join([key.upper().replace('-', '_') + '\t= ' + env[key] for key in selected]) + "\n"
+# def generate_environment(selected: dict[str, str], env: dict[str, str]) -> str:
+#         return "\n".join([key.upper().replace('-', '_') + '\t= ' + env[key] for key in selected]) + "\n"
 
 
 def rule_to_text(rule: str, body: dict[str, str], env: dict[str, str]) -> str:
@@ -107,8 +113,8 @@ def rule_to_text(rule: str, body: dict[str, str], env: dict[str, str]) -> str:
     if 'command' in body.keys():
         result += "\t@%s%s\n" % (
             " ".join(
-                [key.upper().replace('-', '_') + '=' + '$(' + key.upper().replace('-', '_') + ') ' for key in env.keys()]
-            ) if env and 'use_environment' in body.keys() and body['use_environment'] else "",
+                [key.upper().replace('-', '_') + '=' + '$(' + key.upper().replace('-', '_') + ')' for key in env.keys()]
+            ) + " " if env and 'use_environment' in body.keys() and body['use_environment'] else "",
             body['command']
         )
     return result
@@ -127,12 +133,12 @@ def json_to_makefile(obj: dict[str, any]) -> str:
         if 'phony' not in obj['rules'][rule].keys() or obj['rules'][rule]['phony']:
             phonies.append(rule)
 
-    result += "\n.PHONY:\t%s" % ('\\\n\t\t'.join(phonies))
+    result += "\n.PHONY:\t%s" % (' \\\n\t\t'.join(phonies))
     return result
 
 
 
-############### FILE GENERATION ################
+###############    FILE GENERATION    ################
 
 
 # def download_file(url: str) -> bytes:
@@ -199,6 +205,13 @@ def generate_makefile(entry: dict[str, any], env: dict[str, str], type: str):
         for rule in entry['rules']:
             makefile['rules'][rule['name']] = rule
             del makefile['rules'][rule['name']]['name']
+
+    if 'scripts' in entry.keys():
+        for script in entry['scripts']:
+            print(script)
+            makefile['rules'][script] = {
+                'command': '%s run %s' % (entry['package_manager'], script)
+            }
 
     try:
         log_info('Generating Makefile...')
