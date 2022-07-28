@@ -55,6 +55,23 @@ def parse_config() -> dict:
         exit(1)
 
 
+def log_error(message: str):
+    stderr.write('%s[Error]%s%s\n' % (bcolors.FAIL, bcolors.ENDC, message))
+
+
+def log_success(message: str):
+    print('%s[Success]%s%s' % (bcolors.OKGREEN, bcolors.ENDC, message))
+
+
+def log_info(message: str):
+    print('%s[Info]%s%s' % (bcolors.HEADER, bcolors.ENDC, message))
+
+
+def log_header(message: str):
+    line = ("%s%s%s" % (bcolors.UNDERLINE, message, bcolors.ENDC)).center(75, ' ')
+    print("\n%s\n" % line)
+
+
 def replace_all(target: str, replaces: dict[str, str]) -> str:
     for rep in replaces:
         if replaces[rep] == None:
