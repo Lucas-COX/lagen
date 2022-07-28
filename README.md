@@ -65,4 +65,5 @@ Make sure that a `.lagen` directory exists in the root of your project directory
 - Generate a lambda monorepo using a terraform friendly architecture, giving the sample terraform files, wrapped in a Makefile
 - Generate a Makefile calling all the projects ones
 - Parse the configuration file before generating to avoid catching exceptions during generation
+- Make some configuration parameters mandatory
 - Add custom rules to the generated Makefile for each entry and for the global one
