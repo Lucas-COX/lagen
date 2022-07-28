@@ -63,6 +63,14 @@ def replace_all(target: str, replaces: dict[str, str]) -> str:
     return target
 
 
+def install_dependencies(entry: dict[str, any]):
+    log_info('Installing dependencies...')
+    code = subprocess.call(args=['make', '-C', entry['name'], 'install'])
+    if code != 0:
+        log_error('Unable to install dependencies.')
+        log_error('You will have to install them manually or to edit the configuration file.')
+
+
 ################## LOG FUNCTIONS ##################
 
 
