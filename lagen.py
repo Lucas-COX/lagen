@@ -23,6 +23,7 @@ class bcolors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
+
 entries = {
     'node': {
         'install_command': '{{ pm }} install',
@@ -51,20 +52,21 @@ def parse_config(dir: str) -> dict:
 
 
 def log_error(message: str):
-    stderr.write('%s[Error]%s%s\n' % (bcolors.FAIL, bcolors.ENDC, message))
+    stderr.write('%s[Error]   %s%s\n' % (bcolors.FAIL, bcolors.ENDC, message))
 
 
 def log_success(message: str):
-    print('%s[Success]%s%s' % (bcolors.OKGREEN, bcolors.ENDC, message))
+    print('%s[Success] %s%s' % (bcolors.OKGREEN, bcolors.ENDC, message))
 
 
 def log_info(message: str):
-    print('%s[Info]%s%s' % (bcolors.HEADER, bcolors.ENDC, message))
+    print('%s[Info]    %s%s' % (bcolors.HEADER, bcolors.ENDC, message))
 
 
 def log_header(message: str):
-    line = ("%s%s%s" % (bcolors.UNDERLINE, message, bcolors.ENDC)).center(75, ' ')
-    print("\n%s\n" % line)
+    line = ("%s%s%s" % (bcolors.UNDERLINE, message, bcolors.ENDC)).center(60, ' ')
+    print("".center(50, '-'))
+    print("%s\n" % line)
 
 
 def replace_all(target: str, replaces: dict[str, str]) -> str:
@@ -133,27 +135,27 @@ def json_to_makefile(obj: dict[str, any]) -> str:
 ############### FILE GENERATION ################
 
 
-def download_file(url: str) -> bytes:
-    buffer = bytes()
-    response = requests.get(url, stream=True)
-    total_length = response.headers.get('content-length')
+# def download_file(url: str) -> bytes:
+#     buffer = bytes()
+#     response = requests.get(url, stream=True)
+#     total_length = response.headers.get('content-length')
 
-    if (response.status_code != 200):
-        raise ValueError('Response status_code : %d, expected %d' % (response.status_code, 200))
-    if total_length is None:
-        buffer += response.content
-    else:
-        dl = 0
-        total_length = int(total_length)
-        for data in response.iter_content(chunk_size=4096):
-            dl += len(data)
-            buffer += data
+#     if (response.status_code != 200):
+#         raise ValueError('Response status_code : %d, expected %d' % (response.status_code, 200))
+#     if total_length is None:
+#         buffer += response.content
+#     else:
+#         dl = 0
+#         total_length = int(total_length)
+#         for data in response.iter_content(chunk_size=4096):
+#             dl += len(data)
+#             buffer += data
 
-            done = int(50 * dl / total_length)
-            stdout.write("\r[%s%s]" % ('=' * done, ' ' * (50-done)))
-            stdout.flush()
-    stdout.write("\n")
-    return buffer
+#             done = int(50 * dl / total_length)
+#             stdout.write("\r[%s%s]" % ('=' * done, ' ' * (50-done)))
+#             stdout.flush()
+#     stdout.write("\n")
+#     return buffer
 
 
 def generate_makefile(entry: dict[str, any], env: dict[str, str], type: str):
@@ -198,8 +200,12 @@ def generate_makefile(entry: dict[str, any], env: dict[str, str], type: str):
             makefile['rules'][rule['name']] = rule
             del makefile['rules'][rule['name']]['name']
 
-    with open(path.join(entry['name'], 'Makefile'), 'w' if path.exists(path.join(entry['name'], 'Makefile')) else 'x') as f:
-       f.write(json_to_makefile(obj=makefile))
+    try:
+        log_info('Generating Makefile...')
+        with open(path.join(entry['name'], 'Makefile'), 'w' if path.exists(path.join(entry['name'], 'Makefile')) else 'x') as f:
+            f.write(json_to_makefile(obj=makefile))
+    except (OSError, IOError):
+        raise Exception('Unable to generate Makefile (%s)' % (str(e)))
 
 
 def generate_package_json(entry: dict[str, str], config: any):
@@ -221,6 +227,7 @@ def generate_package_json(entry: dict[str, str], config: any):
         package['devDependencies'].update({ '@lucas-cox/lagen': 'latest' })
 
     try:
+        log_info('Generating package.json...')
         with open(path.join(entry['name'], 'package.json'), 'w' if path.exists(path.join(entry['name'], 'package.json')) else 'x') as f:
             json.dump(package, fp=f, indent=4)
 
@@ -239,6 +246,7 @@ def generate_node_lambda(entry: dict[str, str], config: any):
             entry['package_manager'],
             str(entries[entry['type']]['package_managers'])
         ))
+    log_info('Creating ')
     system("mkdir -p %s" % path.join(config['cwd'], entry['name']))
     generate_makefile(entry=entry, env=config['environment'], type=config['type'])
     # generate_terraform
@@ -263,10 +271,9 @@ def generate_entries(config: any) -> None:
         for entry in config['entries']:
             log_header("%s" % entry['name'].upper())
             mappings[entry['type']](entry, config)
-            log_success('[%s] Entry successfully generated !\n' % entry['name'])
+            log_success('Entry successfully generated !\n')
     except KeyError as e:
-        log_error('[%s] Unknown entry type: %s.' % (entry['name'], entry['type']))
-        print(e)
+        log_error('Unknown entry type: %s.' % (entry['type']))
         exit(1)
     # except Exception as e:
     #     log_error('[%s] %s' % (entry['name'], str(e)))

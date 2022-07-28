@@ -51,7 +51,7 @@ entries:
     main: main.go
 
   - name: badentry
-    type: node
+    type: error
     method: GET
     route: /badentry
     main: index.js
