@@ -193,7 +193,7 @@ def generate_makefile(entry: dict[str, any], env: dict[str, str], type: str):
                 'command': get_build_command(entry=entry),
             },
             'deploy': {
-                'prerules': ['build', 'deploy'],
+                'prerules': ['build', 'apply'],
             },
             'init': {
                 'command': 'terraform init',
