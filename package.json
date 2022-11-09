@@ -7,7 +7,7 @@
         "lagen": "lagen.py"
     },
     "devDependencies": {
-        "semantic-release": "^19.0.3"
+        "semantic-release": "^19.0.5"
     },
     "publishConfig": {
         "registry": "https://npm.pkg.github.com",
