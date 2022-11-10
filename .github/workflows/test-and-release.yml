@@ -2,8 +2,8 @@ name: Test and Release
 on: [push]
 
 jobs:
-  test-and-release:
-    name: Run tests and release
+  test:
+    name: Run tests
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
@@ -16,6 +16,17 @@ jobs:
         run: npm ci
       - name: Run tests
         run: npm test
+  release:
+    name: Release
+    runs-on: ubuntu-22.04
+    if: github.ref == 'refs/heads/master'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: 18
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}

@@ -18,6 +18,8 @@ entries:
     scripts:
       test: echo "Testing things"
       test2: echo "Testing more things"
+    dependencies:
+      express: 4.18.1
 
   - name: yarn-testing
     type: node
@@ -26,6 +28,9 @@ entries:
     main: index.js
     package_manager: yarn
     environment: [ aws-access-key-secret, aws-access-key-id ]
+    scripts:
+      test: echo "This is my first test script!"
+      lagen: lagen
 
   - name: custom-rule
     type: node
@@ -51,7 +56,7 @@ entries:
     main: main.go
 
   - name: badentry
-    type: node
+    type: error
     method: GET
     route: /badentry
     main: index.js

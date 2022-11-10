@@ -67,3 +67,4 @@ Make sure that a `.lagen` directory exists in the root of your project directory
 - Parse the configuration file before generating to avoid catching exceptions during generation
 - Make some configuration parameters mandatory
 - Add custom rules to the generated Makefile for each entry and for the global one
+- Let user choose if script creates a Makefile rule or not
