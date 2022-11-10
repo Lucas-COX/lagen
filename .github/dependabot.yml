@@ -7,3 +7,5 @@ updates:
     # Check the npm registry for updates every day (weekdays)
     schedule:
       interval: "daily"
+    # Use dev branch as pull request base
+    target-branch: "dev"
